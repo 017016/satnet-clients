@@ -1,6 +1,9 @@
 @echo off
 setlocal
 
+set "SATNET_DIR=C:\Satnet"
+set "LOG_FILE=%SATNET_DIR%\satnet.log"
+
 net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo Please run as Administrator.
@@ -35,15 +38,15 @@ echo Starting installation...
 node -v >nul 2>&1
 if %errorLevel% neq 0 (
     echo Node.js not found. Installing...
-    powershell -Command "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.10.0/node-v20.10.0-x64.msi' -OutFile 'nodejs.msi'"
+    powershell -Command "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v24.12.0/node-v24.12.0-x64.msi' -OutFile 'nodejs.msi'"
     echo Installing Node.js MSI...
     msiexec /i nodejs.msi /qn
     del nodejs.msi
     set "PATH=%PATH%;C:\Program Files\nodejs"
 )
 
-if not exist "C:\Satnet" mkdir "C:\Satnet"
-cd /d "C:\Satnet"
+if not exist "%SATNET_DIR%" mkdir "%SATNET_DIR%"
+cd /d "%SATNET_DIR%"
 
 if not exist package.json (
     echo {"name": "satnet-client", "version": "1.0.0", "private": true} > package.json
@@ -194,17 +197,28 @@ function handleServerMessage(ws, msg) {
 
 connect();
 '@; [System.IO.File]::WriteAllText('C:\Satnet\client.js', $c)"
+echo.>> "%LOG_FILE%"
+echo [%DATE% %TIME%] Installer: client.js written >> "%LOG_FILE%"
 
 echo Configuring Scheduled Task...
-schtasks /create /tn "SatnetClient" /tr "\"C:\Program Files\nodejs\node.exe\" C:\Satnet\client.js" /sc onstart /ru SYSTEM /f >nul
+schtasks /create /tn "SatnetClient" /tr "cmd /c \"\"C:\Program Files\nodejs\node.exe\" C:\Satnet\client.js >> C:\Satnet\satnet.log 2>>&1\"" /sc onstart /ru SYSTEM /f >nul
 
 schtasks /run /tn "SatnetClient" >nul
 
 (
 echo @echo off
-echo powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=Get-Content 'C:\Satnet\stats.json' -Raw | ConvertFrom-Json; $rx=$s.bytesRx/1MB; $tx=$s.bytesTx/1MB; Write-Host '=== Satnet Status ==='; Write-Host ('Download: {0:N2} MB' -f $rx); Write-Host ('Upload:   {0:N2} MB' -f $tx); if (Test-Path 'C:\Satnet\satnet.id') { Write-Host ('Node ID:  ' + (Get-Content 'C:\Satnet\satnet.id')) } else { Write-Host 'Node ID:  (Registering...)' }"
+echo powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=Get-Content 'C:\Satnet\stats.json' -Raw ^| ConvertFrom-Json; $rx=$s.bytesRx/1MB; $tx=$s.bytesTx/1MB; Write-Host '=== Satnet Status ==='; Write-Host ('Download: {0:N2} MB' -f $rx); Write-Host ('Upload:   {0:N2} MB' -f $tx); if (Test-Path 'C:\Satnet\satnet.id') { Write-Host ('Node ID:  ' + (Get-Content 'C:\Satnet\satnet.id')) } else { Write-Host 'Node ID:  (Registering...)' }"
 echo pause
 ) > "%SystemRoot%\satnet-status.bat"
+
+(
+echo @echo off
+echo set "LOG_FILE=C:\Satnet\satnet.log"
+echo if not exist "%%LOG_FILE%%" ^( echo No log file yet: %%LOG_FILE%% ^& echo Run the installer/start task first. ^& pause ^& exit /b 1 ^)
+echo echo Streaming logs from %%LOG_FILE%% (Ctrl+C to stop)...
+echo powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Path 'C:\Satnet\satnet.log' -Wait -Tail 50"
+echo pause
+) > "%SystemRoot%\satnet-logs.bat"
 
 (
 echo @echo off
@@ -214,6 +228,7 @@ echo schtasks /delete /tn "SatnetClient" /f 2^>nul
 echo echo Removing files...
 echo rmdir /s /q "C:\Satnet"
 echo del "%SystemRoot%\satnet-status.bat"
+echo del "%SystemRoot%\satnet-logs.bat"
 echo del "%SystemRoot%\satnet-uninstall.bat"
 echo echo Satnet uninstalled successfully.
 echo pause
@@ -224,6 +239,7 @@ echo Success! Satnet is installed and running in the background.
 echo.
 echo Commands available:
 echo   satnet-status     : Check stats
+echo   satnet-logs       : View live logs
 echo   satnet-uninstall  : Uninstall
 echo.
 pause
