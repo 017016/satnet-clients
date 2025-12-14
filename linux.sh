@@ -150,7 +150,6 @@ function connect() {
 function handleServerMessage(ws, msg) {
     if (msg.type === 'CONNECT') {
         const { requestId, host, port } = msg;
-        log(`Proxy Request: ${host}:${port} (${requestId})`);
 
         const socket = net.createConnection(port, host, () => {
             ws.send(JSON.stringify({
