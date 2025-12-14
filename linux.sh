@@ -283,6 +283,7 @@ echo "Removing files..."
 rm -rf $SATNET_DIR
 rm /etc/systemd/system/${SERVICE_NAME}.service
 rm /usr/local/bin/satnet-status
+rm /usr/local/bin/satnet-logs
 rm /usr/local/bin/satnet-uninstall
 
 systemctl daemon-reload
