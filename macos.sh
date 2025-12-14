@@ -49,7 +49,7 @@ if ! command -v node &> /dev/null; then
         echo "Please install it manually from: https://nodejs.org/"
         exit 1
     fi
-    
+
     if ! command -v node &> /dev/null; then
          echo -e "${RED}Node.js installation failed. Please install manually.${NC}"
          exit 1
@@ -132,7 +132,7 @@ function connect() {
     ws.on('message', (message) => {
         try {
             const msg = JSON.parse(message);
-            
+
             if (msg.type === 'REGISTERED') {
                 myNodeId = msg.id;
                 fs.writeFileSync(ID_FILE, myNodeId);
@@ -171,7 +171,7 @@ function handleServerMessage(ws, msg) {
 
         socket.on('data', (chunk) => {
             stats.bytesRx += chunk.length;
-            
+
             ws.send(JSON.stringify({
                 type: 'DATA',
                 requestId,
@@ -194,7 +194,7 @@ function handleServerMessage(ws, msg) {
         const socket = activeSockets.get(requestId);
         if (socket) {
             const buffer = Buffer.from(payload, 'base64');
-            
+
             stats.bytesTx += buffer.length;
 
             socket.write(buffer);
@@ -275,7 +275,7 @@ fi
 if [ -f "$STATS_FILE" ]; then
     RX=$(grep -o '"bytesRx":[0-9]*' $STATS_FILE | cut -d':' -f2)
     TX=$(grep -o '"bytesTx":[0-9]*' $STATS_FILE | cut -d':' -f2)
-    
+
     format_bytes() {
         num=$1
         if [ -z "$num" ]; then echo "0 B"; return; fi
@@ -301,6 +301,14 @@ echo "Logs available at: $LOG_FILE"
 EOF
 chmod +x /usr/local/bin/satnet-status
 
+cat << 'EOF' > /usr/local/bin/satnet-logs
+#!/bin/bash
+LOG_FILE="/var/log/satnet.log"
+echo "Streaming logs: $LOG_FILE (Ctrl+C to stop)"
+exec tail -F "$LOG_FILE"
+EOF
+chmod +x /usr/local/bin/satnet-logs
+
 cat << EOF > /usr/local/bin/satnet-uninstall
 #!/bin/bash
 if [ "\$EUID" -ne 0 ]; then
@@ -315,6 +323,7 @@ echo "Removing files..."
 rm -rf "$SATNET_DIR"
 rm "$PLIST_PATH"
 rm /usr/local/bin/satnet-status
+rm /usr/local/bin/satnet-logs
 rm /usr/local/bin/satnet-uninstall
 rm "$LOG_FILE"
 
@@ -328,7 +337,7 @@ sleep 5
 echo -e "\n${GREEN}Success! Satnet is installed and running.${NC}"
 if [ -f "$ID_FILE" ]; then
     echo -e "Your Node ID is: ${YELLOW}$(cat $ID_FILE)${NC}"
-else 
+else
     echo "Node ID is being generated. Run 'satnet-status' in a moment to see it."
 fi
 
@@ -336,5 +345,5 @@ echo ""
 echo "Commands available:"
 echo "  satnet-status     : Check service status and bandwidth"
 echo "  satnet-uninstall  : Remove the application"
-echo "  tail -f $LOG_FILE : View live logs"
+echo "  satnet-logs       : View live logs"
 echo ""
