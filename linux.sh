@@ -291,6 +291,20 @@ echo "If you'd like to reinstall, please run the installer script again."
 EOF
 chmod +x /usr/local/bin/satnet-uninstall
 
+cat << 'EOF' > /usr/local/bin/satnet-logs
+#!/bin/bash
+SERVICE_NAME="satnet"
+
+if command -v journalctl >/dev/null 2>&1; then
+  echo "Streaming logs for: ${SERVICE_NAME} (Ctrl+C to stop)"
+  exec journalctl -u "${SERVICE_NAME}" -f -o cat
+else
+  echo "journalctl not found. Try: tail -f /var/log/syslog | grep satnet"
+  exit 1
+fi
+EOF
+chmod +x /usr/local/bin/satnet-logs
+
 echo "Waiting for node registration..."
 sleep 5
 
@@ -305,4 +319,5 @@ echo ""
 echo "Commands available:"
 echo "  satnet-status     : Check service status and bandwidth"
 echo "  satnet-uninstall  : Remove the application"
+echo "  satnet-logs       : View live logs"
 echo ""
