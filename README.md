@@ -48,6 +48,16 @@ curl -fsSL https://raw.githubusercontent.com/017016/satnet-clients/refs/heads/ma
 
 ---
 
+## 🚫 Uninstall
+
+To uninstall the **Satnet Client**, run this command:
+
+```bash
+sudo satnet-uninstall
+```
+
+---
+
 ## 💬 Support
 
 If you encounter issues:
