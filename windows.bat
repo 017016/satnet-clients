@@ -103,6 +103,7 @@ echo pause
 echo.
 echo Success! Satnet is installed.
 echo The application will run automatically when the computer starts.
+echo If it doesnt run immediately, or goes offline, restarting your PC will fix it.
 echo.
 echo To uninstall, run: satnet-uninstall
 echo.
